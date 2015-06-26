@@ -1,22 +1,23 @@
 #include <iostream>
 #include <cstdlib>
 #include <regex>
-#include <string>
+#include <fstream>
 #include "Markov_Link.h"
 
 
+static const int VOCAB_LENGTH = 30;
 using namespace std;
 
 /*prototypes*/
 string read_text();/*read the text from the file*/
 string clean_text(std::string input);/*remove all non-word characters, keeping newlines*/
-int find_correct_link_in_chain(Markov_Link chain[30], char char_in_question);
+int find_correct_link_in_chain(Markov_Link chain[VOCAB_LENGTH], char char_in_question);
 int find_correct_character_in_link(Markov_Link chain[], int link_index, char proceeding_character);
 int add_character_to_link(Markov_Link chain[], int link_index, char proceeding_character);
-int add_link_to_chain(Markov_Link chain[30], char char_to_add);
+int add_link_to_chain(Markov_Link chain[VOCAB_LENGTH], char char_to_add);
 Markov_Link* build_chain(std::string input_text);
 char get_next_char(Markov_Link* chain, char current_char);
-void zero_chain(Markov_Link chain[30]);
+void zero_chain(Markov_Link chain[VOCAB_LENGTH]);
 
 int main() {
     srand(127);
@@ -25,8 +26,10 @@ int main() {
 
     string text = clean_text(read_text());
     Markov_Link *chain = build_chain(text);/*chain is a pointer to an array, and needs to be deleted*/
-
-    char post_seeding_char = get_next_char(chain, 'a');/*TODO: this is bad. pick a random char.*/
+    cout << "seeding with character '";
+    cout << chain[0].my_character;
+    cout << "'\r\n";
+    char post_seeding_char = get_next_char(chain, chain[0].my_character);
     for(int i = 0; i < 100; i++){
         cout << post_seeding_char;
         post_seeding_char = get_next_char(chain, post_seeding_char);
@@ -49,29 +52,34 @@ char get_next_char(Markov_Link* chain, char current_char){
 
     double random_value = (double)rand() / RAND_MAX; /*value between 0 and 1*/
     int total_sum = 0;
-    for(int x = 0; x < 30; x++){
+    for(int x = 0; x < VOCAB_LENGTH; x++){
         total_sum += chain[link_index].proceeding_char_occurance[x];
     }
 
     int partial_sum = 0;
-    for(int x = 0; x < 30; x++){
+    for(int x = 0; x < VOCAB_LENGTH; x++){
         partial_sum += chain[link_index].proceeding_char_occurance[x];
         if(((double)partial_sum / (double)total_sum) >= random_value) {
             return chain[link_index].proceeding_chars[x];
         }
     }
-    cerr << "ERROR: no next character found in 'get_next_char'\r\n";
+    cerr << "ERROR: no next character found for '";
+    cerr << current_char;
+    cerr << "' in 'get_next_char'\r\n";
     return -1;
 }
 
 
 /*
  * read the text from a predetermined input file,
- * and return it as a string in all lower case
+ * and return it as a string
  * */
 string read_text(){
-    /*TODO: read file, and put it in lower case*/
-    return "this\nis\nthe\ntext.\nit\nwill\nbe\nread\nfrom\na\nfile\nlater,\nbut\nright\nnow\nthis\nis\na\nplaceholder";
+    std::ifstream t("input.txt");
+    std::stringstream buffer;
+    buffer << t.rdbuf();
+    std::string str = buffer.str();
+    return str;
 }
 
 /*
@@ -82,8 +90,12 @@ string clean_text(std::string input){
 
     /*I'm very sure there are things wrong with this*/
     for(auto x = input.begin() ; x != input.end(); x++){
-        if(isalpha(*x) || *x == '\n') clean_string.append(x.base());
-
+        if(isalpha(*x) || *x == '\n' || *x == ' ') clean_string.append(x.base());
+        else {
+            cerr << "BAD CHARACTER ENCOUNTERED: '";
+            cerr << *x;
+            cerr << "'\r\n";
+        }
     }
     return clean_string;
 }
@@ -94,7 +106,7 @@ string clean_text(std::string input){
  * !!!My return value must be 'delete'd!!!
  * */
 Markov_Link* build_chain(std::string input_text){
-    Markov_Link* chain = new Markov_Link[30]();/*the '()' zeroes the memory, which I require*/
+    Markov_Link* chain = new Markov_Link[VOCAB_LENGTH]();/*the '()' zeroes the memory, which I require*/
     zero_chain(chain);
 
     for(auto x = input_text.begin(); x != input_text.end(); x++)
@@ -111,8 +123,8 @@ Markov_Link* build_chain(std::string input_text){
 
 /*
  * quick abstraction for an O(n) loop*/
-int find_correct_link_in_chain(Markov_Link chain[30], char char_in_question){
-    for(int i = 0; i < 30; i++){
+int find_correct_link_in_chain(Markov_Link chain[VOCAB_LENGTH], char char_in_question){
+    for(int i = 0; i < VOCAB_LENGTH; i++){
         if(chain[i].my_character == char_in_question ) return i;
     }
 
@@ -122,7 +134,7 @@ int find_correct_link_in_chain(Markov_Link chain[30], char char_in_question){
 /* analogous to the previous method, at a layer of abstraction lower.*/
 int find_correct_character_in_link(Markov_Link chain[], int link_index, char proceeding_character){
     /*I know my link, now find the index of the next character in my context table*/
-    for(int i = 0; i < 30; i++){
+    for(int i = 0; i < VOCAB_LENGTH; i++){
         if(chain[link_index].proceeding_chars[i] == proceeding_character ) return i;
     }
     return add_character_to_link(chain, link_index, proceeding_character);
@@ -130,7 +142,7 @@ int find_correct_character_in_link(Markov_Link chain[], int link_index, char pro
 
 /* add a proceeding character to a link's (origin character's) context table*/
 int add_character_to_link(Markov_Link chain[], int link_index, char char_to_add){
-    for(int i = 0; i < 30; i++){
+    for(int i = 0; i < VOCAB_LENGTH; i++){
         if(chain[link_index].proceeding_chars[i] > 0) continue;
         chain[link_index].proceeding_chars[i] = char_to_add;
         chain[link_index].proceeding_char_occurance[i] = 0;/*it is not my responsibility to increment this here*/
@@ -141,8 +153,8 @@ int add_character_to_link(Markov_Link chain[], int link_index, char char_to_add)
 }
 
 /* add a link (origin character) to the chain */
-int add_link_to_chain(Markov_Link chain[30], char char_to_add){
-    for(int i = 0; i < 30; i++){
+int add_link_to_chain(Markov_Link chain[VOCAB_LENGTH], char char_to_add){
+    for(int i = 0; i < VOCAB_LENGTH; i++){
         if(chain[i].my_character > 0) continue;
         chain[i].my_character = char_to_add;
         return i;
@@ -152,10 +164,10 @@ int add_link_to_chain(Markov_Link chain[30], char char_to_add){
 }
 
 
-void zero_chain(Markov_Link chain[30]){
-    for(int i = 0; i<30; i++){
+void zero_chain(Markov_Link chain[VOCAB_LENGTH]){
+    for(int i = 0; i< VOCAB_LENGTH; i++){
         chain[i].my_character = 0;
-        for(int j =0; j< 30; j++){
+        for(int j =0; j< VOCAB_LENGTH; j++){
             chain[i].proceeding_char_occurance[j] =0;
             chain[i].proceeding_chars[j] = 0;
         }
