@@ -20,7 +20,7 @@ char get_next_char(Markov_Link* chain, char current_char);
 void zero_chain(Markov_Link chain[VOCAB_LENGTH]);
 
 int main() {
-    srand(127);
+    srand(128);
     /*seed the random number generator with a known value to make it deterministic*/
 
 
@@ -75,7 +75,7 @@ char get_next_char(Markov_Link* chain, char current_char){
  * and return it as a string
  * */
 string read_text(){
-    std::ifstream t("input.txt");
+    std::ifstream t("names.txt");
     std::stringstream buffer;
     buffer << t.rdbuf();
     std::string str = buffer.str();
@@ -87,10 +87,10 @@ string read_text(){
  * */
 string clean_text(std::string input){
     std::string clean_string;
-
     /*I'm very sure there are things wrong with this*/
-    for(auto x = input.begin() ; x != input.end(); x++){
-        if(isalpha(*x) || *x == '\n' || *x == ' ') clean_string.append(x.base());
+    long counter = 0;
+    for(auto x = input.begin() ; x != input.end(); x++, counter++){
+        if(isalpha(*x) || *x == '\n' || *x == ' ') clean_string += *x;
         else {
             cerr << "BAD CHARACTER ENCOUNTERED: '";
             cerr << *x;
@@ -106,8 +106,8 @@ string clean_text(std::string input){
  * !!!My return value must be 'delete'd!!!
  * */
 Markov_Link* build_chain(std::string input_text){
+    cout << "building chain";
     Markov_Link* chain = new Markov_Link[VOCAB_LENGTH]();/*the '()' zeroes the memory, which I require*/
-    zero_chain(chain);
 
     for(auto x = input_text.begin(); x != input_text.end(); x++)
     {/*for every character in the dataset, grab the correct link, and iterate its proceeding character's count*/
@@ -118,6 +118,7 @@ Markov_Link* build_chain(std::string input_text){
             chain[link_index].proceeding_char_occurance[index]++;
         }
     }
+    cout << "finished building chain";
     return chain;
 }
 
