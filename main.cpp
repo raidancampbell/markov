@@ -17,18 +17,16 @@ int add_character_to_link(Markov_Link chain[], int link_index, char proceeding_c
 int add_link_to_chain(Markov_Link chain[VOCAB_LENGTH], char char_to_add);
 Markov_Link* build_chain(std::string input_text);
 char get_next_char(Markov_Link* chain, char current_char);
-void zero_chain(Markov_Link chain[VOCAB_LENGTH]);
 
 int main() {
     srand(128);
     /*seed the random number generator with a known value to make it deterministic*/
 
-
     string text = clean_text(read_text());
     Markov_Link *chain = build_chain(text);/*chain is a pointer to an array, and needs to be deleted*/
-    cout << "seeding with character '";
+    cout << "\r\nseeding with character '";
     cout << chain[0].my_character;
-    cout << "'\r\n";
+    cout << "'\r\n\r\n";
     char post_seeding_char = get_next_char(chain, chain[0].my_character);
     for(int i = 0; i < 100; i++){
         cout << post_seeding_char;
@@ -75,7 +73,7 @@ char get_next_char(Markov_Link* chain, char current_char){
  * and return it as a string
  * */
 string read_text(){
-    std::ifstream t("names.txt");
+    std::ifstream t("input.txt");
     std::stringstream buffer;
     buffer << t.rdbuf();
     std::string str = buffer.str();
@@ -83,11 +81,10 @@ string read_text(){
 }
 
 /*
- * this is a well-defined problem.  I care only about word characters, and a newline -or- space
+ * this is a well-defined problem.  I care only about word characters, and a newline or space
  * */
 string clean_text(std::string input){
     std::string clean_string;
-    /*I'm very sure there are things wrong with this*/
     long counter = 0;
     for(auto x = input.begin() ; x != input.end(); x++, counter++){
         if(isalpha(*x) || *x == '\n' || *x == ' ') clean_string += *x;
@@ -106,7 +103,6 @@ string clean_text(std::string input){
  * !!!My return value must be 'delete'd!!!
  * */
 Markov_Link* build_chain(std::string input_text){
-    cout << "building chain";
     Markov_Link* chain = new Markov_Link[VOCAB_LENGTH]();/*the '()' zeroes the memory, which I require*/
 
     for(auto x = input_text.begin(); x != input_text.end(); x++)
@@ -118,7 +114,6 @@ Markov_Link* build_chain(std::string input_text){
             chain[link_index].proceeding_char_occurance[index]++;
         }
     }
-    cout << "finished building chain";
     return chain;
 }
 
@@ -162,15 +157,4 @@ int add_link_to_chain(Markov_Link chain[VOCAB_LENGTH], char char_to_add){
     }
     cerr << "ERROR: could not add link to chain!";
     return -1; /*uh oh: I couldn't add it because everything was full*/
-}
-
-
-void zero_chain(Markov_Link chain[VOCAB_LENGTH]){
-    for(int i = 0; i< VOCAB_LENGTH; i++){
-        chain[i].my_character = 0;
-        for(int j =0; j< VOCAB_LENGTH; j++){
-            chain[i].proceeding_char_occurance[j] =0;
-            chain[i].proceeding_chars[j] = 0;
-        }
-    }
 }

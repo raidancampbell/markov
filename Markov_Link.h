@@ -7,7 +7,7 @@
 
 
 class Markov_Link {
-public:/*everything's public right now because I'm lazy.*/
+public:/*everything is public right now because I'm lazy.*/
 
     /* I will commonly refer to this as an "origin character"*/
     char my_character;
